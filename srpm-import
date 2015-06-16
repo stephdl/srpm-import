@@ -1,0 +1,70 @@
+#test if all arguments are here
+    if [[ -z $3 ]]; then
+    echo "########################################################################################################"
+    echo "    you must give arguments  : srpm-import Folder_Name Branch_Name(smeX|contribsX) Url_2_Remote_Srpm"
+    echo "########################################################################################################"
+    exit
+    fi
+
+#we test the branchname
+    if [[ $2 != "sme"* && $2 != "contribs"* ]];then
+    echo ""
+    echo "the branchname name is not good, must be smeX or contribsX" 
+    exit 1
+    fi
+
+#we test the remote url
+    if wget $3 >/dev/null 2>&1 ; then
+    echo "Url : $3 exists..."
+    else
+    echo ""
+    echo "Url : $3 doesn't exists.."
+    exit 1
+    fi
+
+#test root cvs folder
+    if [[ -d $1 ]]; then
+    echo "the source folder $1 already exists"
+    fi
+
+#mkdir root cvs folder
+mkdir -p $1
+cvs add $1
+cd $1
+
+#test the branch name
+    if [[ -d $2 ]];then
+    echo ""
+    echo "the branch name already exists : we stop the script"
+    exit 1
+    fi
+
+#mkdir branch name (smeX or contribsX)
+mkdir -p $2
+cvs add $2
+cd $2
+#import correct date of first import
+echo $(date +%s) > import.log
+#copy makefile FIXME
+cp -f ~/Makefile .
+sed -i -e "s/smeserver-durep/$1/g" Makefile
+#wget the srpm by remote url 
+wget $3
+#untar the srpm
+rpm2cpio  *.src.rpm | cpio -idmv --no-absolute-filenames
+#import the new source
+make new-sources FILES=*.?z
+#a bit of clean
+rm -rf *.src.rpm *.?z 
+#import all to cvs
+cvs add *
+#sed work
+version=$(grep -sri 'define version' *.spec | sed 's/%define version //gI')
+release=$(grep -sri 'define release' *.spec | sed 's/%define release //gI')
+#bump the release
+release=$((release + 1))
+#write to the spec file
+sed -i "/%define release/c %define release $release" *.spec
+sed -i "/changelog/a * $(LC_ALL=C date +"%a %b %d %Y") stephane de Labrusse <stephdl@de-labrusse.fr> $version-$release.sme\n- Initial release to sme9contribs\n" *.spec
+
+#cvs commit -m "* $(LC_ALL=C date +"%a %b %d %Y") stephane de Labrusse <stephdl@de-labrusse.fr> $version-$release.sme - Initial release to sme9contribs"
