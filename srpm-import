@@ -1,15 +1,21 @@
+#!/bin/bash
+
+# Author : stephane de labrusse <stephdl@de-labrusse.fr> @2015
+# the purpose is to import a srpm from a remote url in the CVS of buildsrv
+
+
 #test if all arguments are here
     if [[ -z $3 ]]; then
     echo "########################################################################################################"
-    echo "    you must give arguments  : srpm-import Folder_Name Branch_Name(smeX|contribsX) Url_2_Remote_Srpm"
+    echo "Import srpm to CVS on buildsrv  : srpm-import Folder_Name Branch_Name(smeX|contribsX) Url_2_Remote_Srpm"
     echo "########################################################################################################"
     exit
     fi
 
 #we test the branchname
-    if [[ $2 != "sme"* && $2 != "contribs"* ]];then
+    if [[ $2 != "sme"[8-9] && $2 != "contribs"[8-9] ]];then
     echo ""
-    echo "the branchname name is not good, must be smeX or contribsX" 
+    echo "the branchname name is not good, must be sme[8-9] or contribs[8-9]" 
     exit 1
     fi
 
@@ -35,7 +41,15 @@ cd $1
 #test the branch name
     if [[ -d $2 ]];then
     echo ""
-    echo "the branch name already exists : we stop the script"
+    echo "the branch name $1/$2 already exists : we stop the script." 
+    echo ""
+    echo "You must import a new tarball manually if needed :"
+    echo "    cd $1/$2"
+    echo "    wget http://your.src.rpm"
+    echo "    rpm2cpio  *.src.rpm | cpio -idmv --no-absolute-filenames"
+    echo "    make new-sources FILES=*.?z"
+    echo "    rm -rf *.src.rpm *.?z *.spec"
+    echo "    cvs commit -m 'new source commited for the branch $2 of $1'"
     exit 1
     fi
 
@@ -65,6 +79,11 @@ release=$(grep -sri 'define release' *.spec | sed 's/%define release //gI')
 release=$((release + 1))
 #write to the spec file
 sed -i "/%define release/c %define release $release" *.spec
-sed -i "/changelog/a * $(LC_ALL=C date +"%a %b %d %Y") stephane de Labrusse <stephdl@de-labrusse.fr> $version-$release.sme\n- Initial release to sme9contribs\n" *.spec
-
-#cvs commit -m "* $(LC_ALL=C date +"%a %b %d %Y") stephane de Labrusse <stephdl@de-labrusse.fr> $version-$release.sme - Initial release to sme9contribs"
+sed -i "/changelog/a * $(LC_ALL=C date +"%a %b %d %Y") stephane de Labrusse <stephdl@de-labrusse.fr> $version-$release.sme\n- Initial release to $2\n" *.spec
+echo ""
+echo "Verify in $1/$2 if all is well, then commit the changes"
+echo "    cvs commit -m '$(LC_ALL=C date +"%a %b %d %Y") stephane de Labrusse <stephdl@de-labrusse.fr> $version-$release.sme - Initial release to $2'"
+echo ""
+echo " If it is the first importation of a srpm, you must enable it in the CVSROOT, first you have to refresh the CVS source"
+echo "    cvs co CVSROOT"
+echo " Then you must edit /CVSROOT/modules and add the name of the new CVS module (alphabetically sorted), after that commit the changes"
