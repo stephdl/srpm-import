@@ -72,7 +72,12 @@ make new-sources FILES=*.?z
 rm -rf *.src.rpm *.?z 
 #import all to cvs
 cvs add *
-#sed work
+ # Informations needed from the spec file
+ version=$(rpm -q --qf "%{version}\n" --specfile $1.spec) # | head -1)
+ #ARCH=$(rpm -q --qf "%{arch}\n" --specfile $1.spec | head -1)
+ release=$(rpm -q --qf "%{release}\n" --specfile $1.spec | head -1| sed s/\.el.//)
+ 
+ #sed work no needed anymore(see above)
 version=$(grep -sri 'define version' *.spec | sed 's/%define version //gI')
 release=$(grep -sri 'define release' *.spec | sed 's/%define release //gI')
 #bump the release
