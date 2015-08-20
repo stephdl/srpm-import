@@ -78,8 +78,9 @@ cvs add *
  release=$(rpm -q --qf "%{release}\n" --specfile $1.spec | head -1| sed s/\.el.//)
  
  #sed work no needed anymore(see above)
-version=$(grep -sri 'define version' *.spec | sed 's/%define version //gI')
-release=$(grep -sri 'define release' *.spec | sed 's/%define release //gI')
+#version=$(grep -sri 'define version' *.spec | sed 's/%define version //gI')
+#release=$(grep -sri 'define release' *.spec | sed 's/%define release //gI')
+
 #bump the release
 release=$((release + 1))
 #write to the spec file
